@@ -1,14 +1,34 @@
-# Project MyReactApp — Sports_ku
-แอพจองสนามกีฬา สำหรับผู้ใช้ทั่วไป ใช้ DBeaver จัดการฐานข้อมูลระหว่างพัฒนา
+# 🏟️ Project MyReactApp — Sports_KU
 
-## ✨ Features
+แอป **จองสนามกีฬา** สำหรับผู้ใช้ทั่วไป  
+รองรับการใช้งานบน Android พร้อมระบบชำระเงินด้วย **PromptPay QR Code**  
 
--  ระบบจองสนามกีฬา (เลือกวัน เวลา)
--  ระบบล็อกอิน/สมัครสมาชิก
--  รองรับการใช้งานบน Android
--  แสดง QR Code สำหรับจ่ายเงิน (PromptPay)
--  เก็บข้อมูลผู้ใช้/การจองใน SQLite
+---
 
-## 🛠 Tools & Tech Stack
+## ✨ ฟีเจอร์หลัก
 
-<p align="left"> <img src="https://img.shields.io/badge/React%20Native-0.76.7-blueviolet?logo=react" alt="React Native" /> <img src="https://img.shields.io/badge/Expo-52.0.40-lightgrey?logo=expo" alt="Expo" /> <img src="https://img.shields.io/badge/Express.js-4.21.2-black?logo=express" alt="Express.js" /> <img src="https://img.shields.io/badge/SQLite3-Embedded-brightgreen?logo=sqlite" alt="SQLite3" /> <img src="https://img.shields.io/badge/DB%20Browser-SQLite-blue?logo=sqlite" alt="DB Browser for SQLite" /> <img src="https://img.shields.io/badge/Axios-HTTP%20Client-cc6699?logo=axios" alt="Axios" /> <img src="https://img.shields.io/badge/PromptPay-QR%20Code-yellowgreen" alt="PromptPay QR" /> <img src="https://img.shields.io/badge/AsyncStorage-LocalData-lightblue" alt="AsyncStorage" /> <img src="https://img.shields.io/badge/React%20Navigation-v7.x-blue?logo=reactrouter" alt="React Navigation" /> <img src="https://img.shields.io/badge/QR%20Code-Generate-informational?logo=qrcode" alt="QR Code" /> <img src="https://img.shields.io/badge/Android%20Studio-IDE-orange?logo=androidstudio" alt="Android Studio" /> </p>
+- ระบบจองสนามกีฬา 
+- ระบบล็อกอิน / สมัครสมาชิก  
+- ใช้งานได้บน **Android** ผ่าน React Native + Expo  
+- รองรับการชำระเงินด้วย QR Code (PromptPay)  
+- เก็บข้อมูลผู้ใช้และการจองใน
+- เชื่อมต่อ Backend ด้วย **Express.js + Axios**  
+
+---
+
+## 🛠 Tech Stack & Tools
+
+<p align="left">
+  <img src="https://img.shields.io/badge/React%20Native-0.76.7-61DAFB?logo=react&logoColor=white&style=for-the-badge" alt="React Native" />
+  <img src="https://img.shields.io/badge/Expo-52.0.40-000020?logo=expo&logoColor=white&style=for-the-badge" alt="Expo" />
+  <img src="https://img.shields.io/badge/Express.js-4.21.2-000000?logo=express&logoColor=white&style=for-the-badge" alt="Express.js" />
+  <img src="https://img.shields.io/badge/SQLite-Embedded-003B57?logo=sqlite&logoColor=white&style=for-the-badge" alt="SQLite3" />
+  <img src="https://img.shields.io/badge/AsyncStorage-LocalData-FFD700?style=for-the-badge" alt="AsyncStorage" />
+  <img src="https://img.shields.io/badge/React%20Navigation-v7.x-CA4245?logo=reactrouter&logoColor=white&style=for-the-badge" alt="React Navigation" />
+  <img src="https://img.shields.io/badge/Axios-HTTP%20Client-5A29E4?logo=axios&logoColor=white&style=for-the-badge" alt="Axios" />
+  <img src="https://img.shields.io/badge/PromptPay-QR%20Code-4CAF50?style=for-the-badge" alt="PromptPay" />
+  <img src="https://img.shields.io/badge/QR%20Code-Generate-FF9800?logo=qrcode&logoColor=white&style=for-the-badge" alt="QR Code" />
+  <img src="https://img.shields.io/badge/Android%20Studio-IDE-3DDC84?logo=androidstudio&logoColor=white&style=for-the-badge" alt="Android Studio" />
+</p>
+
+---
