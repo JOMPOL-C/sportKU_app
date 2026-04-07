@@ -27,7 +27,8 @@ export const storeStorageData = async (key, value) => {
 export const manageFavorites = async (sport) => {
   try {
     const favorites = await getStorageData("favorites");
-    const existingIndex = favorites.findIndex(fav => fav.id === sport.id);
+    const sportId = String(sport.id);
+    const existingIndex = favorites.findIndex(fav => String(fav.id) === sportId);
     
     if (existingIndex >= 0) {
       favorites.splice(existingIndex, 1);

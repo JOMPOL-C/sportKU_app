@@ -10,7 +10,9 @@ import ProfileScreen from "./ProfileScreen";
 
 const Tab = createBottomTabNavigator();
 
-export default function Homepage() {
+export default function Homepage({ route }) {
+  const user = route?.params?.user;
+
   return (
     <Tab.Navigator 
       screenOptions={({ route }) => ({
@@ -28,10 +30,26 @@ export default function Homepage() {
         tabBarLabelStyle: { fontSize: 12 },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Search" component={SearchScreen} />
-      <Tab.Screen name="History" component={HistoryScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        initialParams={{ user }}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchScreen}
+        initialParams={{ user }}
+      />
+      <Tab.Screen
+        name="History"
+        component={HistoryScreen}
+        initialParams={{ user }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        initialParams={{ user }}
+      />
     </Tab.Navigator>
   );
 }

@@ -1,14 +1,80 @@
 pluginManagement {
-    includeBuild(new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().toString())
+    def nodeExecutable = {
+        def envNode = System.getenv("NODE_BINARY") ?: System.getenv("NODE_EXECUTABLE")
+        if (envNode?.trim()) {
+            return envNode.trim()
+        }
+
+        def localPropertiesFile = new File(rootDir, "local.properties")
+        if (localPropertiesFile.exists()) {
+            def localProperties = new java.util.Properties()
+            localPropertiesFile.withInputStream { stream ->
+                localProperties.load(stream)
+            }
+
+            def configuredNode = localProperties.getProperty("nodeExecutable")
+            if (configuredNode?.trim()) {
+                return configuredNode.trim()
+            }
+        }
+
+        def commonNodeLocations = [
+            "/opt/homebrew/bin/node",
+            "/opt/homebrew/opt/node@22/bin/node",
+            "/usr/local/bin/node"
+        ]
+
+        def discoveredNode = commonNodeLocations.find { path ->
+            new File(path).exists()
+        }
+
+        return discoveredNode ?: "node"
+    }.call()
+
+    includeBuild(new File([nodeExecutable, "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile().toString())
 }
 plugins { id("com.facebook.react.settings") }
+
+def resolveNodeExecutable() {
+  def envNode = System.getenv("NODE_BINARY") ?: System.getenv("NODE_EXECUTABLE")
+  if (envNode?.trim()) {
+    return envNode.trim()
+  }
+
+  def localPropertiesFile = new File(rootDir, "local.properties")
+  if (localPropertiesFile.exists()) {
+    def localProperties = new java.util.Properties()
+    localPropertiesFile.withInputStream { stream ->
+      localProperties.load(stream)
+    }
+
+    def configuredNode = localProperties.getProperty("nodeExecutable")
+    if (configuredNode?.trim()) {
+      return configuredNode.trim()
+    }
+  }
+
+  def commonNodeLocations = [
+    "/opt/homebrew/bin/node",
+    "/opt/homebrew/opt/node@22/bin/node",
+    "/usr/local/bin/node"
+  ]
+
+  def discoveredNode = commonNodeLocations.find { path ->
+    new File(path).exists()
+  }
+
+  return discoveredNode ?: "node"
+}
+
+def nodeExecutable = resolveNodeExecutable()
 
 extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   if (System.getenv('EXPO_USE_COMMUNITY_AUTOLINKING') == '1') {
     ex.autolinkLibrariesFromCommand()
   } else {
     def command = [
-      'node',
+      nodeExecutable,
       '--no-warnings',
       '--eval',
       'require(require.resolve(\'expo-modules-autolinking\', { paths: [require.resolve(\'expo/package.json\')] }))(process.argv.slice(1))',
@@ -26,13 +92,13 @@ rootProject.name = 'sport_ku'
 dependencyResolutionManagement {
   versionCatalogs {
     reactAndroidLibs {
-      from(files(new File(["node", "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), "../gradle/libs.versions.toml")))
+      from(files(new File([nodeExecutable, "--print", "require.resolve('react-native/package.json')"].execute(null, rootDir).text.trim(), "../gradle/libs.versions.toml")))
     }
   }
 }
 
-apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+apply from: new File([nodeExecutable, "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
 useExpoModules()
 
 include ':app'
-includeBuild(new File(["node", "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile())
+includeBuild(new File([nodeExecutable, "--print", "require.resolve('@react-native/gradle-plugin/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim()).getParentFile())

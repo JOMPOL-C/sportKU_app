@@ -1,4 +1,3 @@
-import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 
@@ -7,7 +6,6 @@ import LoginScreen from "./src/screen/LoginScreen";
 import RegisterScreen from "./src/screen/RegisterScreen";
 import Homepage from "./src/screen/Homepage";
 import SearchScreen from "./src/screen/SearchScreen"; // เพิ่มการ import SearchScreen
-import CourtSelectionScreen from "./src/screen/CourtSelectionScreen";
 import BookingScreen from "./src/screen/BookingScreen";
 import PaymentScreen from "./src/screen/PaymentScreen";
 import HistoryScreen from "./src/screen/HistoryScreen";
@@ -15,12 +13,6 @@ import HistoryScreen from "./src/screen/HistoryScreen";
 const Stack = createStackNavigator();
 
 const App = () => {
-
-  useEffect(() => {
-    // เรียกใช้เมื่อแอพเริ่มทำงาน
-    initializeDatabase();
-  }, []);
-  
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
@@ -49,11 +41,6 @@ const App = () => {
           name="Booking" 
           component={BookingScreen} 
           options={{ title: 'จองสนาม' }} 
-        />
-        <Stack.Screen 
-          name="CourtSelection" 
-          component={CourtSelectionScreen} 
-          options={{ title: 'เลือกสนาม' }} 
         />
         <Stack.Screen 
           name="Payment" 

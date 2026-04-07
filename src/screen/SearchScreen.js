@@ -1,23 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { 
   View, 
+  Text,
   FlatList, 
   StyleSheet, 
   ActivityIndicator,
-  Alert 
+  TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import RecipCard from "../components/RecipCard";
 import SearchBox from "../components/SearchBox";
+import SportShowcaseCard from "../components/SportShowcaseCard";
+import { getSports } from "../services/api";
 
-const DEFAULT_SPORT_IMAGE = 'https://via.placeholder.com/150';
-
-const SearchScreen = () => {
+const SearchScreen = ({ route }) => {
   const [search, setSearch] = useState("");
   const [sports, setSports] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigation = useNavigation();
+  const user = route?.params?.user ?? null;
 
   useEffect(() => {
     fetchSports();
@@ -27,29 +28,8 @@ const SearchScreen = () => {
     setIsLoading(true);
     setError(null);
     try {
-      // ในที่นี้ควรเปลี่ยนเป็น API จริงของคุณ
-      const mockSports = [
-        {
-          id: 1,
-          name: "ฟุตบอล",
-          type: "ทีม",
-          price: 500,
-          courts: 3,
-          image: "https://example.com/football.jpg"
-        },
-        // ... ข้อมูลตัวอย่างอื่นๆ
-      ];
-
-      const cleanData = mockSports.map(item => ({
-        id: item.id || Math.random(),
-        name: item.name || 'ไม่ระบุชื่อ',
-        type: item.type || 'ไม่ระบุประเภท',
-        price: item.price || 0,
-        courts: item.courts || 0,
-        image: item.image || DEFAULT_SPORT_IMAGE
-      }));
-
-      setSports(cleanData);
+      const data = await getSports();
+      setSports(data);
     } catch (error) {
       console.error("ไม่สามารถดึงข้อมูลได้:", error);
       setError("ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่ภายหลัง");
@@ -68,7 +48,8 @@ const SearchScreen = () => {
         price: sport.price,
         courts: sport.courts,
         image: sport.image
-      }
+      },
+      user
     });
   };
 
@@ -99,8 +80,10 @@ const SearchScreen = () => {
           )}
           keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
-            <RecipCard 
-              item={item} 
+            <SportShowcaseCard
+              sport={item}
+              variant="compact"
+              style={styles.sportCard}
               onPress={() => handleBookSport(item)}
             />
           )}
@@ -130,6 +113,9 @@ const styles = StyleSheet.create({
     },
     listContainer: {
         paddingBottom: 20
+    },
+    sportCard: {
+        marginBottom: 14,
     },
     loader: {
         flex: 1,

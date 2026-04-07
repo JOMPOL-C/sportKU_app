@@ -1,90 +1,54 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  Alert, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
   SafeAreaView,
-  Image,
-  ActivityIndicator
+  ActivityIndicator,
+  ScrollView,
+  Dimensions,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
+import { getPopularSports } from "../services/api";
+import SportShowcaseCard from "../components/SportShowcaseCard";
 
-const HomeScreen = ({ navigation }) => {
+const { width: screenWidth } = Dimensions.get("window");
+const HERO_CARD_WIDTH = screenWidth - 48;
+const HERO_CARD_GAP = 14;
+const HERO_SNAP_INTERVAL = HERO_CARD_WIDTH + HERO_CARD_GAP;
+
+const HomeScreen = ({ navigation, route }) => {
+  const user = route?.params?.user ?? null;
   const [favorites, setFavorites] = useState([]);
-  const [popularCourts, setPopularCourts] = useState([]);
+  const [popularSports, setPopularSports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const loadFavorites = async () => {
-    try {
-      const favData = await AsyncStorage.getItem("favorites");
-      setFavorites(favData ? JSON.parse(favData) : []);
-      setError(null);
-    } catch (error) {
-      console.error("Error loading favorites:", error);
-      setError("ไม่สามารถโหลดรายการโปรดได้");
-    }
-  };
-
-  const loadBookingHistory = async () => {
-    try {
-      const historyData = await AsyncStorage.getItem("bookingHistory");
-      const bookings = historyData ? JSON.parse(historyData) : [];
-      
-      const courtCounts = {};
-      bookings.forEach(booking => {
-        const key = `${booking.sport}-${booking.selectedCourt}`;
-        courtCounts[key] = {
-          sport: booking.sport,
-          court: booking.selectedCourt,
-          count: (courtCounts[key]?.count || 0) + 1
-        };
-      });
-      
-      setPopularCourts(
-        Object.values(courtCounts)
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5)
-      );
-    } catch (error) {
-      console.error("Error loading booking history:", error);
-      setError("ไม่สามารถโหลดประวัติการจองได้");
-    }
-  };
-
-  const clearBookingHistory = async () => {
-    Alert.alert(
-      "ยืนยันการล้างประวัติ",
-      "คุณแน่ใจหรือไม่ว่าต้องการล้างประวัติการจองทั้งหมด?",
-      [
-        { text: "ยกเลิก", style: "cancel" },
-        { 
-          text: "ล้างข้อมูล", 
-          onPress: async () => {
-            try {
-              await AsyncStorage.removeItem("bookingHistory");
-              setPopularCourts([]);
-              Alert.alert("สำเร็จ", "ล้างประวัติการจองเรียบร้อยแล้ว");
-            } catch (error) {
-              Alert.alert("ผิดพลาด", "ไม่สามารถล้างประวัติได้");
-            }
-          }
-        }
-      ]
-    );
+    const favData = await AsyncStorage.getItem("favorites");
+    return favData ? JSON.parse(favData) : [];
   };
 
   const loadData = async () => {
     setLoading(true);
     setError(null);
+
     try {
-      await Promise.all([loadFavorites(), loadBookingHistory()]);
-    } catch (error) {
-      setError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
+      const [favoriteSports, sportData] = await Promise.all([
+        loadFavorites(),
+        getPopularSports(),
+      ]);
+
+      setFavorites(favoriteSports);
+      setPopularSports(sportData);
+      setActiveSlide(0);
+    } catch (loadError) {
+      console.error("Error loading home data:", loadError);
+      setError("ไม่สามารถโหลดข้อมูลหน้าแรกได้");
     } finally {
       setLoading(false);
     }
@@ -96,37 +60,53 @@ const HomeScreen = ({ navigation }) => {
     }, [])
   );
 
-  const renderFavoriteItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate("Booking", { sport: item })}
-    >
-      {item.image && (
-        <Image 
-          source={{ uri: item.image }} 
-          style={styles.cardImage}
-          resizeMode="cover"
-        />
-      )}
-      <Text style={styles.cardTitle}>{item.name}</Text>
-      <Text style={styles.cardDetail}>ประเภท: {item.type}</Text>
-      <Text style={styles.cardDetail}>ราคา: {item.price} บาท/ชม.</Text>
-    </TouchableOpacity>
-  );
+  const featuredSports = popularSports.slice(0, 4);
 
-  const renderPopularCourt = ({ item, index }) => (
-    <TouchableOpacity style={styles.popularCard}>
-      <Text style={styles.popularCourtTitle}>{item.court}</Text>
-      <Text style={styles.popularCourtSport}>กีฬา: {item.sport}</Text>
-      <Text style={styles.popularCourtCount}>จองแล้ว {item.count} ครั้ง</Text>
-      {index < 3 && <Text style={styles.topBadge}>TOP {index + 1}</Text>}
-    </TouchableOpacity>
+  const handleBookSport = (sport) => {
+    navigation.navigate("Booking", { sport, user });
+  };
+
+  const handleHeroScrollEnd = (event) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const nextSlide = Math.round(offsetX / HERO_SNAP_INTERVAL);
+    setActiveSlide(nextSlide);
+  };
+
+  const renderHeroCard = ({ item }) => {
+    return (
+      <SportShowcaseCard
+        sport={item}
+        variant="hero"
+        style={styles.heroCard}
+        onPress={() => handleBookSport(item)}
+      />
+    );
+  };
+
+  const renderFavoriteCard = (item, index) => (
+    <SportShowcaseCard
+      key={`${item.id}-${index}`}
+      sport={item}
+      variant="compact"
+      style={styles.favoriteCardSpacing}
+      onPress={() => handleBookSport(item)}
+      onFavoriteChange={({ favorites: nextFavorites, isFavorite, sport }) => {
+        if (!isFavorite) {
+          setFavorites((currentFavorites) =>
+            currentFavorites.filter((favorite) => String(favorite.id) !== String(sport.id))
+          );
+          return;
+        }
+
+        setFavorites(nextFavorites);
+      }}
+    />
   );
 
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#2c3e50" />
+        <ActivityIndicator size="large" color="#0D4E68" />
       </SafeAreaView>
     );
   }
@@ -135,10 +115,7 @@ const HomeScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={loadData}
-        >
+        <TouchableOpacity style={styles.retryButton} onPress={loadData}>
           <Text style={styles.retryText}>ลองอีกครั้ง</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -147,48 +124,66 @@ const HomeScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>จองสนามกีฬา</Text>
-      </View>
-
-      <View style={styles.contentContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>กีฬารายการโปรด</Text>
-          <TouchableOpacity onPress={clearBookingHistory}>
-            <Text style={styles.clearButton}>ล้างประวัติ</Text>
-          </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.headerBlock}>
+          <Text style={styles.headerTitle}>
+            {user?.username ? `ยินดีต้อนรับ ${user.username}` : "ยินดีต้อนรับ"}
+          </Text>
+          <Text style={styles.headerSubtitle}>เลือกกีฬาที่อยากเล่นแล้วจองได้เลย</Text>
         </View>
 
-        {favorites.length > 0 ? (
-          <FlatList
-            horizontal
-            data={favorites}
-            renderItem={renderFavoriteItem}
-            contentContainerStyle={styles.listContainer}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id.toString()}
-          />
-        ) : (
-          <Text style={styles.emptyText}>ยังไม่มีกีฬาในรายการโปรด</Text>
-        )}
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>กีฬาที่นิยมในขณะนี้</Text>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>สนามยอดนิยม</Text>
+          {featuredSports.length > 0 ? (
+            <>
+              <FlatList
+                horizontal
+                data={featuredSports}
+                renderItem={renderHeroCard}
+                keyExtractor={(item) => `featured-${item.id}`}
+                snapToInterval={HERO_SNAP_INTERVAL}
+                snapToAlignment="start"
+                decelerationRate="fast"
+                bounces={false}
+                onMomentumScrollEnd={handleHeroScrollEnd}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.heroListContent}
+              />
+
+              <View style={styles.paginationRow}>
+                {featuredSports.map((item, index) => (
+                  <View
+                    key={`dot-${item.id}`}
+                    style={[
+                      styles.paginationDot,
+                      index === activeSlide && styles.paginationDotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyCardTitle}>ยังไม่มีข้อมูลกีฬายอดนิยม</Text>
+              <Text style={styles.emptyCardText}>เมื่อเริ่มมีการจอง ระบบจะจัดอันดับกีฬาที่ถูกจองบ่อยขึ้นมาให้อัตโนมัติ</Text>
+            </View>
+          )}
         </View>
 
-        {popularCourts.length > 0 ? (
-          <FlatList
-            horizontal
-            data={popularCourts}
-            renderItem={renderPopularCourt}
-            contentContainerStyle={styles.listContainer}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item, index) => index.toString()}
-          />
-        ) : (
-          <Text style={styles.emptyText}>ยังไม่มีข้อมูลสนามยอดนิยม</Text>
-        )}
-      </View>
+        <View style={styles.sectionBlock}>
+          <Text style={styles.sectionTitle}>รายการโปรด</Text>
+
+          {favorites.length > 0 ? (
+            favorites.map((item, index) => renderFavoriteCard(item, index))
+          ) : (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyCardTitle}>ยังไม่มีรายการโปรด</Text>
+              <Text style={styles.emptyCardText}>กดหัวใจจากหน้าค้นหา แล้วกีฬาที่ชอบจะขึ้นตรงนี้</Text>
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -196,129 +191,113 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F2EE",
+  },
+  scrollContent: {
+    paddingTop: 18,
+    paddingBottom: 36,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F2EE",
   },
   errorContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F5F2EE",
+    padding: 24,
   },
   errorText: {
-    color: 'red',
+    color: "#A91E00",
     fontSize: 16,
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: "center",
   },
   retryButton: {
-    backgroundColor: '#2c3e50',
-    padding: 10,
-    borderRadius: 5
+    backgroundColor: "#0D4E68",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 999,
   },
   retryText: {
-    color: '#fff',
-    fontWeight: 'bold'
+    color: "#fff",
+    fontWeight: "700",
   },
-  headerContainer: {
-    backgroundColor: "#a91e00",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
+  headerBlock: {
+    paddingHorizontal: 24,
+    marginBottom: 14,
   },
   headerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1F1F1F",
+    marginBottom: 4,
   },
-  contentContainer: {
-    flex: 1,
-    padding: 16,
+  headerSubtitle: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: "#66615B",
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+  sectionBlock: {
+    marginTop: 16,
   },
   sectionTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#242424",
+    paddingHorizontal: 24,
+    marginBottom: 14,
+  },
+  heroListContent: {
+    paddingHorizontal: 24,
+  },
+  heroCard: {
+    width: HERO_CARD_WIDTH,
+    marginRight: HERO_CARD_GAP,
+  },
+  favoriteCardSpacing: {
+    marginHorizontal: 24,
+    marginBottom: 18,
+    minHeight: 132,
+  },
+  paginationRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 16,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: "#CFC9C2",
+    marginHorizontal: 4,
+  },
+  paginationDotActive: {
+    width: 20,
+    backgroundColor: "#0D70F2",
+  },
+  emptyCard: {
+    marginHorizontal: 24,
+    backgroundColor: "#FFFDFC",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#ECE3DA",
+  },
+  emptyCardTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: "800",
+    color: "#222",
+    marginBottom: 8,
   },
-  clearButton: {
-    color: "#e74c3c",
+  emptyCardText: {
     fontSize: 14,
-  },
-  listContainer: {
-    paddingBottom: 8,
-  },
-  card: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    padding: 12,
-    marginRight: 12,
-    width: 160,
-    alignItems: 'center'
-  },
-  cardImage: {
-    width: 120,
-    height: 80,
-    borderRadius: 6,
-    marginBottom: 8
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-    marginBottom: 4,
-    textAlign: 'center'
-  },
-  cardDetail: {
-    fontSize: 14,
-    color: "#666",
-    textAlign: 'center'
-  },
-  popularCard: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-    padding: 12,
-    marginRight: 12,
-    width: 160,
-    position: "relative",
-  },
-  popularCourtTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
-    marginBottom: 4,
-  },
-  popularCourtSport: {
-    fontSize: 14,
-    color: "#666",
-    marginBottom: 4,
-  },
-  popularCourtCount: {
-    fontSize: 14,
-    color: "#666",
-  },
-  topBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    fontSize: 12,
-    color: "#e74c3c",
-    fontWeight: "500",
-  },
-  emptyText: {
-    color: "#999",
-    textAlign: "center",
-    marginVertical: 16,
+    lineHeight: 21,
+    color: "#66615B",
   },
 });
 
